@@ -14,34 +14,12 @@ import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 
 // @ts-ignore
-// import JSONWorker from "url:monaco-editor/esm/vs/language/json/json.worker.js";
-// @ts-ignore
-// import CSSWorker from "url:monaco-editor/esm/vs/language/css/css.worker.js";
-// @ts-ignore
-// import HTMLWorker from "url:monaco-editor/esm/vs/language/html/html.worker.js";
-// @ts-ignore
-// import TSWorker from "url:monaco-editor/esm/vs/language/typescript/ts.worker.js";
-// @ts-ignore
 import EditorWorker from "url:monaco-editor/esm/vs/editor/editor.worker.js";
 import { editor } from "monaco-editor";
 
 // @ts-ignore
 window.MonacoEnvironment = {
   getWorkerUrl: function (moduleId, label) {
-    /*
-    if (label === "json") {
-      return JSONWorker;
-    }
-    if (label === "css" || label === "scss" || label === "less") {
-      return CSSWorker;
-    }
-    if (label === "html" || label === "handlebars" || label === "razor") {
-      return HTMLWorker;
-    }
-    if (label === "typescript" || label === "javascript") {
-      return TSWorker;
-    }
-    */
     return EditorWorker;
   },
 };
@@ -94,6 +72,7 @@ export default {
         users: 0,
       },
       resizing: false,
+      endpoint: localStorage.getItem('liascript_endpoint'),
     };
   },
 
@@ -101,6 +80,16 @@ export default {
     lightMode() {
       return this.lights ? "bi bi-sun" : "bi bi-moon";
     },
+    courseUrl(): string {
+      return `https://liascript.github.io/course/?https://${window.location.host}/${this.storageId}`;
+    },
+    editorUrl(): string {
+      return `https://liascript.github.io/LiveEditor/?/show/file/https://${window.location.host}/${this.storageId}`;
+    },
+    
+    gitUrl(): string {
+      return `https://oer.community/?share_from=https://${window.location.host}/${this.storageId}`;
+    }
   },
 
   mounted() {
@@ -108,9 +97,81 @@ export default {
       this.horizontal =
         document.documentElement.clientWidth < document.documentElement.clientHeight;
     });
+    this.loadContentFromServer(this.storageId);
   },
 
   methods: {
+    async synchronizeWithServer() {
+      console.log("Synchronize with server");
+      const content = this.$refs.editor.getValue();
+      const hash = this.storageId;
+      this.exportContent(content, hash);
+    },
+
+    async exportContent(content, editorHash){
+      if (!this.endpoint) {
+        console.log('Kein Endpunkt für den Export definiert');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('hash', editorHash);
+
+      try {
+        const response = await fetch(this.endpoint, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.error('Fehler beim Export:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Fehler beim Export:', error);
+      }
+    },
+
+    async loadContentFromServer(hash) {
+      console.log('import from server');
+
+      if (!this.endpoint) {
+        console.log('LiaScript Endpoint nicht definiert');
+        return;
+      }
+      try {
+        const response = await fetch(`${this.endpoint}?hash=${hash}`);
+        if (response.ok) {
+          const content = await response.text();
+          console.log('Inhalt vom Server geladen:', content);
+          if (content) {
+            if(content !== '404') {
+            this.$refs.editor.setValue(content);
+            } else {
+              console.error("404: not found");
+            }
+          }else{
+            console.log('Inhalt vom Server ist leer');
+          }
+
+        } else {
+          console.log("Fehler beim Laden des Inhalts vom Server: ", `${this.endpoint}?hash=${hash}`, "Antwort: ", response.statusText);
+        }
+      } catch (error) {
+        console.error('Fehler beim Versuch, den Inhalt vom Server zu laden:', error);
+      }
+    },
+
+    exportToLocal() {
+      if (this.storageId) {
+        const content = this.$refs.editor.getValue();
+        this.exportContent(content, this.storageId);
+      }
+    },
+
     urlPath(path: string[]) {
       return window.location.origin + window.location.pathname + "?/" + path.join("/");
     },
@@ -345,6 +406,7 @@ export default {
 
     fork() {
       this.$refs.editor.fork();
+      this.exportToLocal();
     },
 
     switchLights() {
@@ -365,6 +427,7 @@ export default {
         this.preview.scrollUpOnMain = false;
 
         this.preview.jit(code);
+        this.synchronizeWithServer();
       }
     },
 
@@ -416,6 +479,7 @@ export default {
   components: { Editor, Modal, Pane, Preview, Splitpanes },
 };
 </script>
+
 
 <template>
   <nav class="navbar navbar-expand-lg bg-light">
@@ -560,6 +624,48 @@ export default {
 
             <ul class="dropdown-menu">
               <li>
+                <h6 class="dropdown-header fw-light">Collaborate ...</h6>
+              </li>
+              
+              <li>
+                <span
+                  class="d-inline-block"
+                  tabindex="0"
+                  data-toggle="tooltip"
+                  title="Fork this document before you can use this function"
+                >
+                  <a
+                    class="dropdown-item"
+                    :class="{ disabled: !storageId }"
+                    :href="courseUrl"
+                    target="_blank"
+                  >
+                  Learning View
+                  </a>
+                </span>
+              </li>
+              <li>
+                <span
+                  class="d-inline-block"
+                  tabindex="0"
+                  data-toggle="tooltip"
+                  title="Fork this document before you can use this function"
+                >
+                  <a
+                    class="dropdown-item"
+                    :class="{ disabled: !storageId }"
+                    :href="editorUrl"
+                    target="_blank"
+                  >
+                    LiveEditor 
+                  </a>
+                </span>
+              </li>
+              
+              
+              <!--
+              <li><hr class="dropdown-divider"></li>
+              <li>
                 <h6 class="dropdown-header fw-light">Share editor ...</h6>
               </li>
               <li>
@@ -640,6 +746,7 @@ export default {
                   </a>
                 </div>
               </li>
+              -->
               <li>
                 <hr class="dropdown-divider" />
               </li>
@@ -656,6 +763,7 @@ export default {
                   Project-{{ $props?.storageId?.slice(0, 8) || "xxxxxxxx" }}.zip
                 </button>
               </li>
+              
               <!--li>
                 <hr class="dropdown-divider">
               </li>
@@ -717,9 +825,39 @@ export default {
                   </a>
                 </span>
               </li>
+              <li>
+                <span
+                  class="d-inline-block"
+                  style="width: 100%"
+                  tabindex="0"
+                  data-toggle="tooltip"
+                  title="Fork this document before you can use this function"
+                >
+                  <a
+                    class="btn dropdown-item btn-link"
+                    :class="{ disabled: !storageId }"
+                    aria-current="page"
+                    target="_blank"
+                    :href="gitUrl"
+                    title="Share the document with the oer.community"
+                  >
+                   oer.community
+                  </a>
+                </span>
+              </li>
             </ul>
           </div>
-
+          <div class="nav-item dropdown me-4">
+            <a
+              class="nav-link"
+              href="/"
+              role="button"
+              aria-expanded="false"
+            >
+              Home
+            </a>
+          </div>
+          <!-- disable collaboratien funktions
           <div class="nav-item dropdown me-4">
             <button
               class="btn badge dropdown-toggle p-3"
@@ -795,7 +933,7 @@ export default {
                 </span>
               </li>
             </ul>
-          </div>
+          </div>-->
         </div>
       </div>
     </div>
