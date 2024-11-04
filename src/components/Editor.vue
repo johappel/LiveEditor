@@ -168,6 +168,13 @@ export default {
         return Editor.getValue();
       }
     },
+    setValue(content) {
+      if (Editor) {
+        Editor.setValue(content);
+      } else {
+        console.error("Editor is not ready yet");
+      }
+    },
 
     make(cmd: string, data: any = null) {
       if (!Editor) return;
@@ -1072,13 +1079,13 @@ I (study) ~[[ am going to study ]]~ harder this term.
         }
       }
 
-      const indexeddbProvider = new IndexeddbPersistence(storageId, yDoc);
+      // const indexeddbProvider = new IndexeddbPersistence(storageId, yDoc);
 
       const self = this;
-      indexeddbProvider.on("synced", (event: any) => {
-        console.log("liascript: content from the database is loaded");
-        self.$emit("ready");
-      });
+      // indexeddbProvider.on("synced", (event: any) => {
+      //   console.log("liascript: content from the database is loaded");
+      //   self.$emit("ready");
+      // });
 
       if (provider) {
         provider.awareness.setLocalStateField("user", this.user);

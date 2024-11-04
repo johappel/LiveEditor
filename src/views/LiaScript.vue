@@ -86,9 +86,13 @@ export default {
     editorUrl(): string {
       return `https://liascript.github.io/LiveEditor/?/show/file/https://${window.location.host}/${this.storageId}`;
     },
-    
+        
     gitUrl(): string {
-      return `https://oer.community/?share_from=https://${window.location.host}/${this.storageId}`;
+      let oer_endpoint = localStorage.getItem('oer_endpoint');
+      if(!oer_endpoint){
+        return '';
+      }
+      return `${oer_endpoint}https://${window.location.host}/${this.storageId}`;
     }
   },
 
@@ -103,9 +107,13 @@ export default {
   methods: {
     async synchronizeWithServer() {
       console.log("Synchronize with server");
-      const content = this.$refs.editor.getValue();
-      const hash = this.storageId;
-      this.exportContent(content, hash);
+      if(!this.fileUrl){
+        const content = this.$refs.editor.getValue();
+        const hash = this.storageId;
+        this.exportContent(content, hash);
+      }else{
+        this.fork();
+      }
     },
 
     async exportContent(content, editorHash){
@@ -145,10 +153,12 @@ export default {
       try {
         const response = await fetch(`${this.endpoint}?hash=${hash}`);
         if (response.ok) {
+        
           const content = await response.text();
-          console.log('Inhalt vom Server geladen:', content);
           if (content) {
             if(content !== '404') {
+            console.log('Inhalt vom Server geladen');
+            
             this.$refs.editor.setValue(content);
             } else {
               console.error("404: not found");
@@ -598,7 +608,7 @@ export default {
               New
             </a>
           </div>
-
+<!-- 
           <div class="nav-item me-4">
             <button
               type="button"
@@ -610,7 +620,7 @@ export default {
               Fork
             </button>
           </div>
-
+ -->
           <div class="nav-item dropdown me-4">
             <a
               class="nav-link dropdown-toggle"
@@ -632,7 +642,7 @@ export default {
                   class="d-inline-block"
                   tabindex="0"
                   data-toggle="tooltip"
-                  title="Fork this document before you can use this function"
+                  title="Link to this course view (HTML only) from LiaScript. Learners can use this link to work together in small groups"
                 >
                   <a
                     class="dropdown-item"
@@ -649,7 +659,7 @@ export default {
                   class="d-inline-block"
                   tabindex="0"
                   data-toggle="tooltip"
-                  title="Fork this document before you can use this function"
+                  title="Load this document into the LiaScript LiveEditor if you want to collaborate with others"
                 >
                   <a
                     class="dropdown-item"
@@ -661,8 +671,19 @@ export default {
                   </a>
                 </span>
               </li>
-              
-              
+              <li><hr class="dropdown-divider"></li>
+              <li><span>
+                <button
+                type="button"
+                class="btn nav-link btn-link"
+                @click="fork"
+                title="Make a copy of this document to adapt it for your other learning groups, for example"
+              >
+                <i class="bi bi-signpost-split"></i>
+                Fork
+              </button>
+              </span></li>
+
               <!--
               <li><hr class="dropdown-divider"></li>
               <li>
@@ -754,12 +775,12 @@ export default {
                 <h6 class="dropdown-header fw-light">Download to ...</h6>
               </li>
               <li>
-                <button class="btn dropdown-item btn-link" @click="download">
+                <button class="btn dropdown-item btn-link" @click="download" title="Download this course as a Markdown file">
                   README.md
                 </button>
               </li>
               <li>
-                <button class="btn dropdown-item btn-link" @click="downloadZip">
+                <button class="btn dropdown-item btn-link" @click="downloadZip" title="Download this course as a ZIP file">
                   Project-{{ $props?.storageId?.slice(0, 8) || "xxxxxxxx" }}.zip
                 </button>
               </li>
@@ -805,13 +826,13 @@ export default {
               <li>
                 <h6 class="dropdown-header fw-light">Export to...</h6>
               </li>
-              <li>
+              <!-- <li>
                 <span
                   class="d-inline-block"
                   style="width: 100%"
                   tabindex="0"
                   data-toggle="tooltip"
-                  title="Fork this document before you can use this function"
+                  title="Save this document as guist to to your Github account"
                 >
                   <a
                     class="btn dropdown-item btn-link"
@@ -824,24 +845,24 @@ export default {
                     GitHub gist
                   </a>
                 </span>
-              </li>
+              </li> -->
               <li>
                 <span
                   class="d-inline-block"
                   style="width: 100%"
                   tabindex="0"
                   data-toggle="tooltip"
-                  title="Fork this document before you can use this function"
+                  title="Share this course to the OER community"
                 >
                   <a
                     class="btn dropdown-item btn-link"
-                    :class="{ disabled: !storageId }"
+                    :class="{ disabled: !gitUrl }"
                     aria-current="page"
                     target="_blank"
                     :href="gitUrl"
-                    title="Share the document with the oer.community"
+                    title="Share this document with the OER Repository"
                   >
-                   oer.community
+                   OER Repository
                   </a>
                 </span>
               </li>
