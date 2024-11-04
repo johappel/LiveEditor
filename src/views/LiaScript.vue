@@ -81,10 +81,12 @@ export default {
       return this.lights ? "bi bi-sun" : "bi bi-moon";
     },
     courseUrl(): string {
-      return `https://liascript.github.io/course/?https://${window.location.host}/${this.storageId}`;
+      const allorigin_endpoint = localStorage.getItem('allorigin_endpoint')||'';
+      return `https://liascript.github.io/course/?${allorigin_endpoint}https://${window.location.host}/${this.storageId}`;
     },
     editorUrl(): string {
-      return `https://liascript.github.io/LiveEditor/?/show/file/https://${window.location.host}/${this.storageId}`;
+      const allorigin_endpoint = localStorage.getItem('allorigin_endpoint')||'';
+      return `https://liascript.github.io/LiveEditor/?/show/file/${allorigin_endpoint}https://${window.location.host}/${this.storageId}`;
     },
         
     gitUrl(): string {
@@ -101,7 +103,7 @@ export default {
       this.horizontal =
         document.documentElement.clientWidth < document.documentElement.clientHeight;
     });
-    this.loadContentFromServer(this.storageId);
+    //this.loadContentFromServer(this.storageId);
   },
 
   methods: {
@@ -157,21 +159,38 @@ export default {
           const content = await response.text();
           if (content) {
             if(content !== '404') {
-            console.log('Inhalt vom Server geladen');
+              console.log('Inhalt vom Server geladen');
             
-            this.$refs.editor.setValue(content);
+              const frontMatterEndIndex = content.indexOf('-->');
+              if (frontMatterEndIndex !== -1) {
+                const frontMatter = content.substring(0, frontMatterEndIndex + 3);
+                const updatedFrontMatter = frontMatter.replace(/@schema:[\s\S]*?-->/, '-->');
+                let lia_content = updatedFrontMatter + content.substring(frontMatterEndIndex + 3);
+                lia_content = lia_content.replace("fileUrl: ", "original: ");
+                this.$refs.editor.setValue(lia_content);
+
+              }else{
+                this.$refs.editor.setValue(content);
+              }
+
             } else {
               console.error("404: not found");
             }
           }else{
             console.log('Inhalt vom Server ist leer');
           }
-
+          this.compile();
         } else {
           console.log("Fehler beim Laden des Inhalts vom Server: ", `${this.endpoint}?hash=${hash}`, "Antwort: ", response.statusText);
+          
+          this.$refs.courseLink.classList.add('disabled');
+          this.$refs.editorLink.classList.add('disabled');
+          this.$refs.oerLink.classList.add('disabled');
         }
+
       } catch (error) {
-        console.error('Fehler beim Versuch, den Inhalt vom Server zu laden:', error);
+        
+        console.error('Fehler beim Versuch, den Inhalt vom Server zu laden:', error.message);
       }
     },
 
@@ -449,7 +468,8 @@ export default {
       console.log("liascript: editor ready");
       this.editorIsReady = true;
       this.lights = this.$refs.editor.lights;
-      this.compile();
+      this.loadContentFromServer(this.storageId); // Lade den Inhalt vom Server, wenn der Editor bereit ist
+      // this.compile();
     },
 
     previewReady(preview: any) {
@@ -649,6 +669,7 @@ export default {
                     :class="{ disabled: !storageId }"
                     :href="courseUrl"
                     target="_blank"
+                    ref="courseLink"
                   >
                   Learning View
                   </a>
@@ -666,6 +687,7 @@ export default {
                     :class="{ disabled: !storageId }"
                     :href="editorUrl"
                     target="_blank"
+                    ref="editorLink"
                   >
                     LiveEditor 
                   </a>
@@ -860,6 +882,7 @@ export default {
                     aria-current="page"
                     target="_blank"
                     :href="gitUrl"
+                    ref="oerLink"
                     title="Share this document with the OER Repository"
                   >
                    OER Repository

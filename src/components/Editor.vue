@@ -1079,13 +1079,13 @@ I (study) ~[[ am going to study ]]~ harder this term.
         }
       }
 
-      // const indexeddbProvider = new IndexeddbPersistence(storageId, yDoc);
+      const indexeddbProvider = new IndexeddbPersistence(storageId, yDoc);
 
       const self = this;
-      // indexeddbProvider.on("synced", (event: any) => {
-      //   console.log("liascript: content from the database is loaded");
-      //   self.$emit("ready");
-      // });
+      indexeddbProvider.on("synced", (event: any) => {
+        console.log("liascript: content from the database is loaded");
+        self.$emit("ready");
+      });
 
       if (provider) {
         provider.awareness.setLocalStateField("user", this.user);
