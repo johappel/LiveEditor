@@ -514,7 +514,7 @@ export default {
 <template>
   <nav class="navbar navbar-expand-lg bg-light">
     <div class="container-fluid">
-      <a v-if="!embed" class="navbar-brand" href="./" data-link="true">
+      <a v-if="!embed" class="navbar-brand" href="../lia-dashboard/" data-link="true">
         <img src="../../assets/logo.png" alt="LiaScript" height="28" />
         <span id="lia-edit">LiaEdit</span>
       </a>
@@ -616,6 +616,7 @@ export default {
         <div class="navbar-nav me-auto mb-lg-0"></div>
 
         <div class="navbar-nav mb-2 mb-lg-0">
+<!--
           <div class="nav-item nav-item-sm ml-4 me-4">
             <a
               class="nav-link"
@@ -628,7 +629,7 @@ export default {
               New
             </a>
           </div>
-<!-- 
+ 
           <div class="nav-item me-4">
             <button
               type="button"
@@ -894,11 +895,11 @@ export default {
           <div class="nav-item dropdown me-4">
             <a
               class="nav-link"
-              href="/"
+              href="./lia-dashboard/"
               role="button"
               aria-expanded="false"
             >
-              Home
+              Meine Forks
             </a>
           </div>
           <!-- disable collaboratien funktions
